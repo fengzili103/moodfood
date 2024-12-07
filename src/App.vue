@@ -19,7 +19,11 @@ export default {
         to.name !== "loginConsumer" &&
         to.path !== "/" &&
         to.path !== "/loginConsumer" &&
-        to.path !== "/registerConsumer"
+        to.path !== "/registerConsumer" &&
+        to.path !== "/loginBusiness" &&
+        to.path !== "/businessHome" &&
+        to.path !== "/loginDeliver" &&
+        to.path !== "/deliverHome"
       ) {
         this.showChat = true;
       } else {
@@ -42,7 +46,11 @@ export default {
       this.$route.name !== "loginConsumer" &&
       this.$route.path !== "/" &&
       this.$route.path !== "/loginConsumer" &&
-      this.$route.path !== "/registerConsumer"
+      this.$route.path !== "/registerConsumer" &&
+      this.$route.path !== "/loginBusiness" &&
+      this.$route.path !== "/businessHome" &&
+      this.$route.path !== "/loginDeliver" &&
+      this.$route.path !== "/deliverHome"
     ) {
       console.log(11111, this.$route.path);
       this.showChat = true;

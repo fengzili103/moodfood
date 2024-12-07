@@ -19,6 +19,26 @@ export const constantRoutes = [
     ],
   },
   {
+    path: "/loginBusiness",
+    name: "loginBusiness",
+    component: () => import("@/views/seller/login/index"),
+  },
+  {
+    path: "/businessHome",
+    name: "businessHome",
+    component: () => import("@/views/seller/pages/index"),
+  },
+  {
+    path: "/loginDeliver",
+    name: "loginDeliver",
+    component: () => import("@/views/deliver/login/index"),
+  },
+  {
+    path: "/deliverHome",
+    name: "deliverHome",
+    component: () => import("@/views/deliver/pages/index"),
+  },
+  {
     path: "/loginConsumer",
     name: "loginConsumer",
     component: () => import("@/views/consumer/login/index"),
@@ -27,6 +47,10 @@ export const constantRoutes = [
     path: "/registerConsumer",
     name: "registerConsumer",
     component: () => import("@/views/consumer/login/register"),
+  },
+  {
+    path: "/",
+    redirect: "/loginConsumer",
   },
   {
     path: "/consumer",

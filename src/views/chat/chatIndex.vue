@@ -19,20 +19,20 @@
           ></el-button>
         </div>
       </div>
-      <div class="content">
+      <div class="content" ref="chatContainer">
         <div v-for="(item, index) in chats" :key="index">
-          <div class="line" v-if="item.type === 'ai'">
+          <div class="line" v-if="item.role === 'assistant'">
             <div class="line-in">
-              <div class="chatlogo ai">
+              <div class="chatlogo assistant">
                 <i class="el-icon-knife-fork"></i>
               </div>
               <div class="output" v-html="item.content"></div>
             </div>
           </div>
-          <div class="line human" v-else>
+          <div class="line user" v-else>
             <div class="line-in">
               <div class="output" v-html="item.content"></div>
-              <div class="chatlogo ai">
+              <div class="chatlogo assistant">
                 <i class="el-icon-user-solid"></i>
               </div>
             </div>
@@ -72,7 +72,7 @@ export default {
 
       chats: [
         {
-          type: "ai",
+          role: "assistant",
           content: "Hellow, what can I do for you",
         },
       ],
@@ -95,23 +95,33 @@ export default {
       }
 
       this.chats.push({
-        type: "human",
+        role: "user",
         content: this.content,
-      });
-      this.chats.push({
-        type: "ai",
-        content: `<i class="el-icon-loading"></i> Waiting...`,
       });
 
       let data = {
-        model: "Nous Hermes 2 Mistral DPO",
-        messages: [{ role: "user", content: this.content }],
+        model: "Phi-3 Mini Instruct",
+        messages: this.chats,
         max_tokens: 500,
         temperature: 0.28,
       };
       send(data).then((res) => {
         let response = res.choices[0].message.content;
+
         this.chats[this.chats.length - 1].content = response;
+      });
+      this.content = "";
+
+      this.chats.push({
+        role: "assistant",
+        content: `<i class="el-icon-loading"></i> Waiting...`,
+      });
+      this.scrollToBottom();
+    },
+    scrollToBottom() {
+      this.$nextTick(() => {
+        const chatContainer = this.$refs.chatContainer;
+        chatContainer.scrollTop = chatContainer.scrollHeight;
       });
     },
   },
@@ -147,6 +157,7 @@ export default {
       height: calc(100% - 110px - 1px);
       padding-top: 16px;
       padding-bottom: 16px;
+      overflow-y: auto;
       .line {
         width: calc(100%);
         height: auto;
@@ -156,7 +167,7 @@ export default {
         justify-content: flex-start;
         padding-bottom: 0;
         padding-top: 0;
-        &.human {
+        &.user {
           justify-content: flex-end;
           .chatlogo {
             margin-right: 0;

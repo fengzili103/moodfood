@@ -1,5 +1,8 @@
 <template>
   <div class="container">
+    <div class="loading" v-if="loading">
+      <i class="el-icon-loading"></i>
+    </div>
     <el-button
       type="danger"
       icon="el-icon-top-left"
@@ -44,13 +47,46 @@
           size="mini"
           placeholder="Say something to Chef Simon for food suggestion"
           v-model="content"
+          ref="inputField"
         >
-          <el-button
-            slot="append"
-            icon="el-icon-s-promotion"
-            type="danger"
-            @click="send"
-          ></el-button>
+          <div slot="append">
+            <el-tooltip
+              class="item"
+              effect="dark"
+              content="Send"
+              placement="top"
+            >
+              <el-button
+                icon="el-icon-s-promotion"
+                type="danger"
+                @click="send"
+              ></el-button>
+            </el-tooltip>
+            <el-tooltip
+              class="item"
+              effect="dark"
+              content="Suggest food based on above content"
+              placement="top"
+            >
+              <el-button
+                icon="el-icon-tableware"
+                type="danger"
+                @click="suggestfood"
+              ></el-button>
+            </el-tooltip>
+            <el-tooltip
+              class="item"
+              effect="dark"
+              content="New Chat"
+              placement="top"
+            >
+              <el-button
+                icon="el-icon-chat-dot-square"
+                type="danger"
+                @click="recall"
+              ></el-button>
+            </el-tooltip>
+          </div>
         </el-input>
       </div>
     </div>
@@ -58,9 +94,11 @@
 </template>
 
 <script>
-// import $ from "jquery";
+import $ from "jquery";
 // import { Message } from "element-ui";
-import { send } from "./service";
+import { send, foodsuggest, end } from "./service";
+import { generateRandomString } from "@/utils/tool";
+import nlp from "compromise";
 export default {
   components: {},
   data() {
@@ -69,6 +107,10 @@ export default {
 
       loading: false,
       content: "",
+      generalinfo: {
+        customer_id: "",
+        sessionid: "",
+      },
 
       chats: [
         {
@@ -78,10 +120,177 @@ export default {
       ],
     };
   },
+  watch: {
+    $route(to) {
+      if (to.path === "/consumer/home") {
+        this.generalinfo.sessionid = generateRandomString(32);
+        this.generalinfo.customer_id = JSON.parse(
+          sessionStorage.getItem("userinfor")
+        ).id;
+      }
+    },
+  },
   created() {},
-  mounted() {},
+  mounted() {
+    window.getContent = this.getContent;
+    window.getGeneralInfo = this.getGeneralInfo;
+    window.recallOnece = this.recallOnece;
+    this.$refs.inputField.$el
+      .querySelector("input")
+      .addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          this.send();
+        }
+      });
+  },
   methods: {
+    getGeneralInfo() {
+      return this.generalinfo;
+    },
+    getSimpleWord(text) {
+      const doc = nlp(text);
+      const keywords = doc
+        .nouns()
+        .out("array")
+        .filter((word) => !nlp(word).has("#Pronoun"));
+
+      return keywords.toString();
+    },
+    getLastUserContent() {
+      const lastUserChat = [...this.chats]
+        .reverse()
+        .find((chat) => chat.role === "user");
+      return lastUserChat
+        ? lastUserChat.content + ",make the short and quick response"
+        : "";
+    },
+    handleEnterKey() {
+      this.send();
+    },
+    recallOnece() {
+      end({ sessionid: this.generalinfo.sessionid }).then(() => {
+        this.chats = [
+          {
+            role: "assistant",
+            content: "Hellow, what can I do for you",
+          },
+        ];
+      });
+    },
+    recall() {
+      // if ($(".el-icon-loading").length > 0) {
+      //   this.$message({
+      //     message: "Please wait for the response",
+      //     type: "warning",
+      //   });
+      //   return;
+      // }
+      end({ sessionid: this.generalinfo.sessionid }).then(() => {
+        this.$message({
+          message: "The chat has been restarted",
+          type: "success",
+        });
+        this.chats = [
+          {
+            role: "assistant",
+            content: "Hellow, what can I do for you",
+          },
+        ];
+      });
+    },
+    getContent() {
+      return this.chats.slice(1, -2);
+    },
+    suggestfood() {
+      if ($(".foodlist").length > 0) {
+        this.$message({
+          message: "Please restart chat",
+          type: "warning",
+        });
+        return;
+      }
+      if ($(".el-icon-loading").length > 0) {
+        this.$message({
+          message: "Please wait for the response",
+          type: "warning",
+        });
+        return;
+      }
+      if (this.chats.length <= 1) {
+        this.$message({
+          message: "Please input some keyword",
+          type: "warning",
+        });
+        //this.chats.pop();
+        return;
+      }
+      this.loading = true;
+      let keyword = "";
+      let keywordall = "";
+      for (let i = 1; i < this.chats.length; i++) {
+        if (this.chats[i].role === "user") {
+          keyword += this.chats[i].content + ";";
+        }
+        keywordall += this.chats[i].content + ";";
+      }
+      keyword = keyword.replace(/\n/g, "");
+      keyword = keyword.replace(/<br>/g, "");
+      keyword = keyword.replace(/<\/br>/g, "");
+
+      keywordall = this.getSimpleWord(keywordall);
+      foodsuggest({ keywordall: keywordall, keyword: keyword }).then((res) => {
+        let response = res.beans;
+        let list = [];
+        for (let i = 0; i < response.length; i++) {
+          let $object = `<li class="clickable foodchoose" food-id="${
+            response[i].id
+          }" food-name="${response[i].food_name}"> (${i + 1}).${
+            response[i].food_name
+          }</li>`;
+          list.push($object);
+        }
+        list.unshift(`<ul class="foodlist">`);
+        list.push(`</ul>`);
+        this.chats.push({
+          role: "assistant",
+          content: list.toString().replace(/,/g, ""),
+        });
+        this.chats.push({
+          role: "assistant",
+          content: `Choose the above food or <span class="clickable restart">Start new chat</span>`,
+        });
+        setTimeout(() => {
+          $(".foodchoose").click((e) => {
+            let foodid = $(e.target).attr("food-id");
+            this.$router.push({
+              path: "/consumer/foodlist",
+              query: {
+                foodid: foodid,
+              },
+            });
+            setTimeout(() => {
+              if (window.reloadfoodlist) {
+                window.reloadfoodlist();
+              }
+            }, 200);
+          });
+          $(".restart").click(() => {
+            this.recall();
+          });
+        }, 300);
+        this.scrollToBottom();
+        this.loading = false;
+      });
+      this.content = "";
+    },
     send() {
+      if (!this.content) {
+        this.$message({
+          message: "Please input some content",
+          type: "warning",
+        });
+        return;
+      }
       const isWaiting = this.chats.some(
         (chat) => chat.content === `<i class="el-icon-loading"></i> Waiting...`
       );
@@ -100,13 +309,13 @@ export default {
       });
 
       let data = {
-        model: "Phi-3 Mini Instruct",
-        messages: this.chats,
-        max_tokens: 500,
-        temperature: 0.28,
+        ...this.generalinfo,
+        content: this.getLastUserContent(),
       };
+
       send(data).then((res) => {
-        let response = res.choices[0].message.content;
+        let response = res.result;
+        response = response.replace(/<\|assistant\|>/g, "");
 
         this.chats[this.chats.length - 1].content = response;
       });
@@ -127,12 +336,41 @@ export default {
   },
 };
 </script>
-
+<style lang="scss">
+.foodchoose {
+  &.clickable {
+    cursor: pointer;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+.clickable {
+  cursor: pointer;
+  &:hover {
+    text-decoration: underline;
+  }
+}
+</style>
 <style scoped lang="scss">
 .container {
   width: auto;
   height: auto;
   position: relative;
+  .loading {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    background-color: rgba(202, 0, 0, 0.2);
+    color: white;
+    font-size: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
   .body {
     width: 500px;
     height: 480px;

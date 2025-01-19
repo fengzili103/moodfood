@@ -2,7 +2,7 @@
   <div>
     <el-carousel height="700px">
       <el-carousel-item v-for="item in 4" :key="item">
-        <div class="oneimage"></div>
+        <div class="oneimage" :class="'i' + item"></div>
       </el-carousel-item>
     </el-carousel>
     <section>
@@ -37,20 +37,16 @@
       <div class="topfood">
         <div class="topfood-in">
           <div class="content">
-            <div class="block" style="margin-top: 70px">
-              <div class="foodimg"></div>
-            </div>
-            <div class="block" style="margin-top: -70px">
-              <div class="foodimg"></div>
-            </div>
-            <div class="block" style="margin-top: 70px">
-              <div class="foodimg"></div>
-            </div>
-            <div class="block" style="margin-top: -70px">
-              <div class="foodimg"></div>
-            </div>
-            <div class="block" style="margin-top: 70px">
-              <div class="foodimg"></div>
+            <div
+              class="block"
+              style="margin-top: 70px"
+              v-for="(item, index) in dishes"
+              :key="index"
+            >
+              <div
+                class="foodimg"
+                :style="{ 'background-image': `url(${item.photo})` }"
+              ></div>
             </div>
           </div>
           <div class="title">
@@ -105,6 +101,7 @@
   </div>
 </template>
 <script>
+import { get } from "./service";
 export default {
   components: {},
   data() {
@@ -115,10 +112,30 @@ export default {
         email: "",
         content: "",
       },
+      dishes: [],
     };
   },
+  mounted() {
+    setTimeout(() => {
+      get({ food_name: "", page: 1, size: 5 }).then((res) => {
+        this.dishes = res.beans;
+        console.log(res);
+      });
+    }, 1000);
+  },
   methods: {
-    onSubmit() {},
+    onSubmit() {
+      this.form = {
+        name: "",
+        phone: "",
+        email: "",
+        content: "",
+      };
+      this.$message({
+        message: "Your message has been sent successfully!",
+        type: "success",
+      });
+    },
   },
 };
 </script>
@@ -129,7 +146,18 @@ export default {
   background-repeat: no-repeat;
   background-position: 50% 50%;
   background-size: cover;
-  background-image: url("../../../assets/images/banner.jpg.webp");
+  &.i1 {
+    background-image: url("../../../assets/images/2.jpg");
+  }
+  &.i2 {
+    background-image: url("../../../assets/images/1.jpg");
+  }
+  &.i3 {
+    background-image: url("../../../assets/images/3.jpg");
+  }
+  &.i4 {
+    background-image: url("../../../assets/images/4.jpg");
+  }
 }
 .about {
   width: 100%;

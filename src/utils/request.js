@@ -3,11 +3,15 @@ import store from "@/store";
 import { Message } from "element-ui";
 import { getToken } from "@/utils/auth";
 
+// const instance = axios.create({
+//   baseURL: "/api", // url = base baseURL + request url
+//   timeout: 500000,
+// });
+
 const instance = axios.create({
   baseURL: "/", // url = base baseURL + request url
   timeout: 500000,
 });
-
 // Add a request interceptor
 instance.interceptors.request.use(
   (config) => {
@@ -26,6 +30,14 @@ instance.interceptors.request.use(
 // Add a response interceptor
 instance.interceptors.response.use(
   (response) => {
+    if (response.data.code !== 200) {
+      Message({
+        message: response.data.message || "Error",
+        type: "error",
+        duration: 5 * 1000,
+      });
+      return Promise.reject(new Error(response.data.message || "Error"));
+    }
     // Do something with response data
     return response.data;
   },

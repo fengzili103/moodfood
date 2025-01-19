@@ -1,32 +1,43 @@
 <template>
   <div>
-    <el-date-picker
-      v-model="searchDate"
-      type="date"
-      placeholder="Select date"
-      style="margin-bottom: 20px; width: 300px; margin-right: 10px"
-    ></el-date-picker>
-    <el-button type="primary" @click="search">Search</el-button>
-    <el-button>ADD NEW</el-button>
-
-    <el-table :data="tableData" stripe style="width: 100%">
-      <el-table-column label="Image">
-        <template slot-scope="scope">
-          <img :src="scope.row.image" alt="Food Image" class="food-image" />
+    <el-button type="primary" @click="search" style="margin-bottom: 20px"
+      >Reload</el-button
+    >
+    <el-table :data="tableData" stripe style="width: 100%" show-summary>
+      <el-table-column type="index" width="50"> </el-table-column>
+      <el-table-column type="expand">
+        <template slot-scope="props">
+          <el-card>
+            <el-table :data="props.row.foods" stripe style="width: 100%">
+              <el-table-column prop="food_name" label="Food Name">
+              </el-table-column>
+              <el-table-column label="Food Picture">
+                <template slot-scope="scope">
+                  <img
+                    :src="scope.row.photo"
+                    alt="Food Picture"
+                    style="width: 100px; height: 100px"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column prop="price" label="Price(£)"> </el-table-column>
+            </el-table>
+          </el-card>
         </template>
       </el-table-column>
-      <el-table-column prop="date" label="Date"> </el-table-column>
-      <el-table-column prop="name" label="Name"> </el-table-column>
-      <el-table-column prop="price" label="Price(£)"> </el-table-column>
-      <el-table-column prop="describe" label="Describe"> </el-table-column>
-      <el-table-column prop="status" label="Status"> </el-table-column>
+      <el-table-column prop="order_time" label="Order Date"> </el-table-column>
+      <el-table-column prop="order_amount" label="Total price(£)">
+      </el-table-column>
+      <el-table-column prop="remark" label="Order Comment"> </el-table-column>
+      <el-table-column label="Status">
+        <template slot-scope="scope">
+          {{ findStatus(scope.row.order_state) }}
+        </template>
+      </el-table-column>
       <el-table-column label="operate">
         <template slot-scope="scope">
-          <el-button
-            type="text"
-            size="small"
-            @click="confirmDelivery(scope.$index)"
-            >Deliverd</el-button
+          <el-button type="text" size="small" @click="complete(scope.row)"
+            >Complete</el-button
           >
         </template>
       </el-table-column>
@@ -34,41 +45,55 @@
   </div>
 </template>
 <script>
+import { orderlist as get, updatelist } from "./service";
+import { getStatus } from "@/utils/tool";
 export default {
   components: {},
   data() {
     return {
-      searchDate: "",
-      activeIndex: "1",
+      searchdata: {
+        food_name: "",
+        order_state: "5",
+      },
       form: {},
-      tableData: [{}],
+      tableData: [],
+      selectedStatus: "",
+      currentRow: "",
+      dialogVisible: false,
     };
   },
+  mounted() {
+    this.search();
+  },
   methods: {
-    search() {},
-    confirmDelivery(row) {
-      this.$confirm(
-        "Are you sure you want to mark this food as delivered?",
-        "Confirm Delivery",
-        {
-          confirmButtonText: "Yes",
-          cancelButtonText: "No",
-          type: "warning",
-        }
-      )
-        .then(() => {
-          row.status = "Delivered";
+    findStatus(index) {
+      return getStatus(index);
+    },
+    search() {
+      get(this.searchdata).then((res) => {
+        this.tableData = res.beans;
+      });
+    },
+    complete(row) {
+      this.currentRow = row;
+      this.selectedStatus = row.order_state;
+      this.confirmChangeStatus();
+    },
+    confirmChangeStatus() {
+      if (this.currentRow) {
+        updatelist({
+          id: this.currentRow.id,
+          order_state: "2",
+        }).then(() => {
+          this.search();
+
           this.$message({
             type: "success",
-            message: "The food has been marked as delivered!",
+            message: `Status changed!`,
           });
-        })
-        .catch(() => {
-          this.$message({
-            type: "info",
-            message: "Delivery canceled",
-          });
+          this.dialogVisible = false;
         });
+      }
     },
   },
 };

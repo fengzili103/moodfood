@@ -7,22 +7,27 @@
       label-width="100px"
       size="mini"
     >
-      <el-form-item label="Image" prop="image">
+      <el-form-item label="Image">
         <el-upload
           class="avatar-uploader"
           :show-file-list="false"
           :on-change="handleImageChange"
           :before-upload="beforeImageUpload"
+          :auto-upload="false"
+          action=""
         >
           <img v-if="form.imageUrl" :src="form.imageUrl" class="avatar" />
           <i v-else class="el-icon-plus avatar-uploader-icon"></i>
         </el-upload>
       </el-form-item>
-      <el-form-item label="Name" prop="name">
-        <el-input v-model="form.name"></el-input>
+      <el-form-item label="Name" prop="food_name">
+        <el-input v-model="form.food_name"></el-input>
       </el-form-item>
       <el-form-item label="Price" prop="price">
         <el-input v-model="form.price" type="number"></el-input>
+      </el-form-item>
+      <el-form-item label="Ingredients" prop="ingredients">
+        <el-input type="textarea" v-model="form.ingredients"></el-input>
       </el-form-item>
       <el-form-item label="Description" prop="description">
         <el-input type="textarea" v-model="form.description"></el-input>
@@ -36,6 +41,7 @@
 </template>
 
 <script>
+import { addOne, editOne } from "./service.js";
 export default {
   data() {
     return {
@@ -45,9 +51,10 @@ export default {
         id: null,
         image: null,
         imageUrl: "",
-        name: "",
+        food_name: "",
         price: "",
         description: "",
+        ingredients: "",
       },
       rules: {
         image: [
@@ -57,20 +64,13 @@ export default {
             trigger: "change",
           },
         ],
-        name: [
+        food_name: [
           { required: true, message: "Please input the name", trigger: "blur" },
         ],
         price: [
           {
             required: true,
             message: "Please input the price",
-            trigger: "blur",
-          },
-        ],
-        description: [
-          {
-            required: true,
-            message: "Please input the description",
             trigger: "blur",
           },
         ],
@@ -98,32 +98,34 @@ export default {
       this.$refs.form.validate((valid) => {
         if (valid) {
           const formData = new FormData();
-          formData.append("image", this.form.image);
-          formData.append("name", this.form.name);
+          formData.append("file", this.form.image);
+          formData.append("food_name", this.form.food_name);
           formData.append("price", this.form.price);
           formData.append("description", this.form.description);
-
-          let url = "https://your-api-endpoint.com/submit";
-          let method = "POST";
+          formData.append("ingredients", this.form.ingredients);
 
           if (this.form.id) {
-            url = `https://your-api-endpoint.com/submit/${this.form.id}`;
-            method = "PUT";
+            formData.append("id", this.form.id);
+            editOne(formData)
+              .then(() => {
+                this.$message.success("Submit successful!");
+                this.dialogVisible = false;
+                this.$parent.search();
+              })
+              .catch(() => {
+                this.$message.error("Submit failed!");
+              });
+          } else {
+            addOne(formData)
+              .then(() => {
+                this.$message.success("Submit successful!");
+                this.dialogVisible = false;
+                this.$parent.search();
+              })
+              .catch(() => {
+                this.$message.error("Submit failed!");
+              });
           }
-
-          fetch(url, {
-            method: method,
-            body: formData,
-          })
-            .then((response) => response.json())
-            .then(() => {
-              this.$message.success("Submit successful!");
-              this.dialogVisible = false; // Close the dialog on success
-            })
-            .catch((error) => {
-              console.error("Error:", error);
-              this.$message.error("Submit failed!");
-            });
         } else {
           console.log("error submit!!");
           return false;
@@ -136,28 +138,24 @@ export default {
         id: null,
         image: null,
         imageUrl: "",
-        name: "",
+        food_name: "",
         price: "",
         description: "",
+        ingredients: "",
       };
     },
-    edit(id) {
+    edit(row) {
       this.dialogTitle = "Edit";
-      // Fetch the data for the given id and populate the form
-      fetch(`https://your-api-endpoint.com/item/${id}`)
-        .then((response) => response.json())
-        .then((data) => {
-          this.form.id = data.id;
-          this.form.name = data.name;
-          this.form.price = data.price;
-          this.form.description = data.description;
-          this.form.imageUrl = data.imageUrl; // Assuming the API returns the image URL
-          this.dialogVisible = true; // Open the dialog for editing
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-          this.$message.error("Failed to load item data!");
-        });
+      this.onReset();
+      this.dialogVisible = true; // Open the dialog for creating
+      this.form = {
+        id: row.id,
+        imageUrl: row.photo,
+        food_name: row.food_name,
+        price: row.price,
+        description: row.description,
+        ingredients: row.ingredients,
+      };
     },
     add() {
       this.dialogTitle = "Create";

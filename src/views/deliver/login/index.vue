@@ -47,7 +47,7 @@
   </div>
 </template>
 <script>
-import { setToken } from "@/utils/auth";
+import { login } from "./service.js";
 export default {
   name: "loginPage",
   data() {
@@ -55,12 +55,14 @@ export default {
       loginForm: {
         username: "admin",
         password: "admin",
+        user_type: "3",
       },
       loginRules: {
         username: [{ required: true, trigger: "blur" }],
         password: [{ required: true, trigger: "blur" }],
       },
       loading: false,
+      dialogVisible: false,
     };
   },
 
@@ -69,12 +71,16 @@ export default {
       this.$refs.loginForm.validate((valid) => {
         if (valid) {
           this.loading = true;
-          setToken("test");
-          this.$router
-            .push({
-              path: "/deliverHome",
-            })
-            .catch(() => {});
+
+          login(this.loginForm).then((res) => {
+            sessionStorage.setItem("userinfor", JSON.stringify(res.bean));
+            this.$router
+              .push({
+                path: "/deliverHome",
+              })
+              .catch(() => {});
+          });
+
           this.loading = false;
         } else {
           return false;

@@ -8,21 +8,31 @@
             <el-input
               style="margin-top: 20px; width: 280px"
               placeholder="Search by food name"
-              v-model="search.name"
+              v-model="searchdata.food_name"
               class="input-with-select"
               size="small"
+              clearable
             >
-              <el-button slot="append" icon="el-icon-search"></el-button>
+              <el-button
+                slot="append"
+                icon="el-icon-search"
+                @click="search"
+              ></el-button>
             </el-input>
           </div>
           <div class="content" ref="content">
             <div class="content-in">
               <div class="onefood" v-for="(item, index) in list" :key="index">
-                <div class="image">
-                  <div class="detail" @click="detail">More</div>
+                <div
+                  class="image"
+                  :style="{ backgroundImage: 'url(' + item.photo + ')' }"
+                >
+                  <div class="detail" @click="detail(item)">More</div>
                 </div>
                 <div class="infor">
-                  <div class="name">{{ item.name }}</div>
+                  <div class="name" :title="item.food_name">
+                    {{ item.food_name }}
+                  </div>
                 </div>
                 <div class="control">
                   <div class="price">£{{ item.price }}</div>
@@ -30,7 +40,7 @@
                     type="danger"
                     size="mini"
                     icon="el-icon-shopping-cart-1"
-                    @click="purchase($event)"
+                    @click="purchase($event, item)"
                     >Add yo Cart</el-button
                   >
                 </div>
@@ -41,6 +51,9 @@
                 background
                 layout="prev, pager, next"
                 :total="1000"
+                :current-page="pageOtiopns.page"
+                :page-size="pageOtiopns.size"
+                @current-change="handlePageChange"
               >
               </el-pagination>
             </div>
@@ -51,7 +64,9 @@
     <detail ref="detail"></detail>
   </div>
 </template>
+
 <script>
+import { get, getInfo } from "./service";
 import $ from "jquery";
 export default {
   components: {
@@ -59,23 +74,43 @@ export default {
   },
   data() {
     return {
-      search: {
-        name: "",
+      searchdata: {
+        food_name: "",
       },
-      list: [
-        { name: "Spaghetti", price: 10 },
-        { name: "Spaghetti", price: 10 },
-        { name: "Spaghetti", price: 10 },
-        { name: "Spaghetti", price: 10 },
-        { name: "Spaghetti", price: 10 },
-        { name: "Spaghetti", price: 10 },
-      ],
+      list: [],
+      pageOtiopns: {
+        page: 1,
+        size: 10,
+      },
     };
   },
-  mounted() {},
+  mounted() {
+    if (this.$route.query.foodid) {
+      this.queryOneFood();
+    } else {
+      this.search();
+    }
+    window.reloadfoodlist = this.queryOneFood;
+  },
   beforeDestroy() {},
   methods: {
-    purchase(event) {
+    queryOneFood() {
+      getInfo({ id: this.$route.query.foodid }).then((res) => {
+        this.list = [res.bean];
+      });
+    },
+    search() {
+      let param = {
+        page: this.pageOtiopns.page,
+        size: this.pageOtiopns.size,
+        food_name: this.searchdata.food_name,
+      };
+      get(param).then((res) => {
+        this.list = res.beans;
+      });
+    },
+    purchase(event, item) {
+      window.addCartReal(item);
       const button = $(event.target);
       const cart = $("#amount");
       const bull = $('<div class="red-bull"></div>');
@@ -95,11 +130,13 @@ export default {
         1500,
         function () {
           bull.remove();
+          window.addCart();
         }
       );
     },
-    detail() {
-      this.$refs.detail.open();
+
+    detail(item) {
+      this.$refs.detail.open(item);
     },
     setContentHeight() {
       const content = this.$refs.content;
@@ -107,9 +144,14 @@ export default {
         content.style.height = `${window.innerHeight - 260}px`;
       }
     },
+    handlePageChange(page) {
+      this.pageOtiopns.page = page;
+      this.search();
+    },
   },
 };
 </script>
+
 <style>
 .red-bull {
   position: absolute;
@@ -212,6 +254,11 @@ export default {
           align-items: center;
           font-size: 14px;
           color: #ca0000;
+          .name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
         }
         .control {
           display: flex;

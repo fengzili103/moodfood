@@ -8,51 +8,52 @@
             <el-input
               style="margin-top: 20px; width: 280px"
               placeholder="Search by food name"
-              v-model="search.name"
+              v-model="searchdata.name"
               class="input-with-select"
               size="small"
+              clearable
             >
-              <el-button slot="append" icon="el-icon-search"></el-button>
+              <el-button
+                slot="append"
+                icon="el-icon-search"
+                @click="search"
+              ></el-button>
             </el-input>
           </div>
           <div class="content" ref="content">
             <el-button
-              style="margin-bottom: 10px"
               type="danger"
-              round
-              icon="el-icon-shopping-cart-full"
-              >CheckOut</el-button
+              size="mini"
+              @click="checkout"
+              style="margin-bottom: 10px"
+              >Checkout</el-button
             >
             <div class="content-in">
               <el-table
-                :data="tableData"
+                show-summary
+                :data="filteredData"
                 stripe
                 style="width: 100%"
-                show-summary
               >
                 <el-table-column prop="date" label="Date"> </el-table-column>
                 <el-table-column prop="name" label="Name"> </el-table-column>
                 <el-table-column prop="price" label="price(£)">
                 </el-table-column>
-                <el-table-column label="operate">
+                <el-table-column prop="status" label="status">
+                </el-table-column>
+                <el-table-column label="Action">
                   <template slot-scope="scope">
                     <el-button
-                      type="text"
-                      size="small"
-                      @click="remove(scope.$index)"
-                      >remove</el-button
+                      type="danger"
+                      size="mini"
+                      icon="el-icon-delete"
+                      @click="handleDelete(scope.$index, scope.row)"
                     >
+                      Delete
+                    </el-button>
                   </template>
                 </el-table-column>
               </el-table>
-            </div>
-            <div class="pagination">
-              <el-pagination
-                background
-                layout="prev, pager, next"
-                :total="1000"
-              >
-              </el-pagination>
             </div>
           </div>
         </div>
@@ -61,35 +62,144 @@
   </div>
 </template>
 <script>
+import $ from "jquery";
+import { checkout, insert } from "./service";
 export default {
   components: {},
   data() {
     return {
-      search: {
+      searchdata: {
         name: "",
       },
-      tableData: [
-        {
-          name: "Spaghetti",
-          date: "2021-09-01 00:00:00",
-          price: "10",
-        },
-        {
-          name: "Spaghetti",
-          date: "2021-09-01 00:00:00",
-          price: "10",
-        },
-        {
-          name: "Spaghetti",
-          date: "2021-09-01 00:00:00",
-          price: "10",
-        },
-      ],
+      tableData: [],
+      filteredData: [],
     };
   },
-  mounted() {},
+  mounted() {
+    this.refresh();
+    this.search();
+  },
+  beforeRouteEnter(to, from, next) {
+    next((vm) => {
+      vm.refresh();
+    });
+  },
   beforeDestroy() {},
-  methods: {},
+  methods: {
+    findSuggest() {
+      let commuication = [];
+      let generalinfor = window.getGeneralInfo();
+      console.log(this.tableData, this.filteredData);
+      this.tableData.forEach((item) => {
+        console.log(item.id, $("[food-id='" + item.id + "']").length);
+        if ($("[food-id='" + item.id + "']").length != 0) {
+          let chats = window.getContent();
+          console.log(chats);
+          for (let i = 0; i < chats.length; i++) {
+            chats[i].sessionid = generalinfor.sessionid;
+            chats[i].customer_id = generalinfor.customer_id;
+            chats[i].food_id = item.id;
+          }
+          commuication = chats;
+        }
+      });
+      insert(commuication);
+    },
+    checkout() {
+      if (this.tableData.length === 0) {
+        this.$message({
+          type: "info",
+          message: "Cart is empty",
+        });
+        return;
+      }
+      this.$confirm("Are you sure to checkout?", "Warning", {
+        confirmButtonText: "OK",
+        cancelButtonText: "Cancel",
+        type: "warning",
+      })
+        .then(() => {
+          this.$prompt("Please enter your other requests", "Checkout", {
+            confirmButtonText: "OK",
+            cancelButtonText: "Cancel",
+          })
+            .then(({ value }) => {
+              this.findSuggest();
+              if (value === null) {
+                value = "";
+              }
+              let param = {
+                customer_id: JSON.parse(sessionStorage.getItem("userinfor")).id,
+                remark: value,
+                food_ids: [],
+              };
+              for (let i = 0; i < this.tableData.length; i++) {
+                param.food_ids.push(this.tableData[i].id);
+              }
+              param.food_ids = param.food_ids.toString();
+              checkout(param).then(() => {
+                this.tableData = [];
+                window.clearCart();
+                this.$message({
+                  type: "success",
+                  message:
+                    "Checkout successfully, you can check the order in the order list",
+                });
+                this.tableData = [];
+                this.search();
+                if (($(".foodlist"), length > 0)) {
+                  console.log("refresh");
+                }
+              });
+            })
+            .catch(() => {
+              this.$message({
+                type: "info",
+                message: "Checkout canceled",
+              });
+            });
+        })
+        .catch(() => {
+          this.$message({
+            type: "info",
+            message: "Checkout canceled",
+          });
+        });
+    },
+    search() {
+      if (this.searchdata.name === "") {
+        this.filteredData = this.tableData;
+        return;
+      }
+      console.log(this.filteredData);
+      this.filteredData = this.tableData.filter((item) =>
+        item.name.toLowerCase().includes(this.searchdata.name.toLowerCase())
+      );
+    },
+    refresh() {
+      this.tableData = [];
+      let cart = window.getCart();
+      for (let i = 0; i < cart.length; i++) {
+        this.addFoodTable(cart[i]);
+      }
+      this.search();
+      console.log(this.tableData);
+    },
+    handleDelete(index, row) {
+      this.tableData.splice(index, 1);
+      window.deleteCart(row.id);
+    },
+    addFoodTable(data) {
+      let row = {
+        id: data.id,
+        date: data.date,
+        name: data.food_name,
+        price: data.price,
+        status: "Waiting for checkout",
+      };
+      this.tableData.push(row);
+    },
+  },
 };
 </script>
 <style scoped lang="scss">

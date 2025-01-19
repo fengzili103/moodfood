@@ -24,7 +24,6 @@ export default {
         },
         { user: "User2", comment: "I love it!", date: "2023-10-02" },
         { user: "User3", comment: "Highly recommended.", date: "2023-10-03" },
-        // 更多评论...
       ],
     };
   },

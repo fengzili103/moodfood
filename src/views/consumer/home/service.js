@@ -1,8 +1,8 @@
 import request from "@/utils/request";
 
-export function login(data) {
+export function get(data) {
   return request({
-    url: "/api/auth/login",
+    url: "/api/food/page",
     method: "post",
     data,
   });

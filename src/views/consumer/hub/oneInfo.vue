@@ -13,22 +13,24 @@
         :show-file-list="false"
         :on-change="handleAvatarChange"
         :before-upload="beforeAvatarUpload"
+        :auto-upload="false"
+        action=""
       >
-        <img v-if="form.avatar" :src="form.avatar" class="avatar" />
+        <img v-if="form.photo" :src="form.photo" class="avatar" />
         <i v-else class="el-icon-plus avatar-uploader-icon"></i>
       </el-upload>
     </el-form-item>
-    <el-form-item label="Name" prop="name">
-      <el-input v-model="form.name"></el-input>
+    <el-form-item label="Name" prop="username">
+      <el-input v-model="form.username" disabled></el-input>
     </el-form-item>
-    <el-form-item label="Phone" prop="phone">
-      <el-input v-model="form.phone"></el-input>
+    <el-form-item label="Password" prop="password">
+      <el-input type="password" v-model="form.password"></el-input>
+    </el-form-item>
+    <el-form-item label="phone_number" prop="phone_number">
+      <el-input v-model="form.phone_number"></el-input>
     </el-form-item>
     <el-form-item label="Address" prop="address">
       <el-input v-model="form.address"></el-input>
-    </el-form-item>
-    <el-form-item label="Email" prop="email">
-      <el-input v-model="form.email"></el-input>
     </el-form-item>
     <el-form-item>
       <el-button type="primary" @click="onSubmit">Save</el-button>
@@ -38,29 +40,39 @@
 </template>
 
 <script>
+import { get, editinfo } from "./service";
 export default {
   data() {
     return {
       form: {
-        avatar: "",
+        id: "",
+        photo: "",
         avatarFile: null,
-        name: "",
-        phone: "",
+        username: "",
+        phone_number: "",
         address: "",
-        email: "",
+        password: "",
+        user_type: "1",
       },
       rules: {
-        name: [
+        username: [
           {
             required: true,
-            message: "Please input your name",
+            message: "Please input your username",
             trigger: "blur",
           },
         ],
-        phone: [
+        phone_number: [
           {
             required: true,
             message: "Please input your phone number",
+            trigger: "blur",
+          },
+        ],
+        password: [
+          {
+            required: true,
+            message: "Please input your password",
             trigger: "blur",
           },
         ],
@@ -71,24 +83,21 @@ export default {
             trigger: "blur",
           },
         ],
-        email: [
-          {
-            required: true,
-            message: "Please input your email",
-            trigger: "blur",
-          },
-          {
-            type: "email",
-            message: "Please input a valid email address",
-            trigger: ["blur", "change"],
-          },
-        ],
       },
     };
   },
+  mounted() {
+    const userInfo = sessionStorage.getItem("userinfor");
+    if (userInfo) {
+      const user = JSON.parse(userInfo);
+      get({ id: user.id }).then((response) => {
+        this.form = { ...this.form, ...response.bean };
+      });
+    }
+  },
   methods: {
     handleAvatarChange(file) {
-      this.form.avatar = URL.createObjectURL(file.raw);
+      this.form.photo = URL.createObjectURL(file.raw);
       this.form.avatarFile = file.raw;
     },
     beforeAvatarUpload(file) {
@@ -107,23 +116,21 @@ export default {
       this.$refs.form.validate((valid) => {
         if (valid) {
           const formData = new FormData();
-          formData.append("avatar", this.form.avatarFile);
-          formData.append("name", this.form.name);
-          formData.append("phone", this.form.phone);
-          formData.append("address", this.form.address);
-          formData.append("email", this.form.email);
+          formData.append("id", this.form.id);
 
-          //   fetch("", {
-          //     method: "POST",
-          //     body: formData,
-          //   })
-          //     .then((response) => response.json())
-          //     .then((data) => {
-          //       alert("Submit successful!");
-          //     })
-          //     .catch((error) => {
-          //       console.error("Error:", error);
-          //     });
+          formData.append("photo", this.form.avatarFile);
+          formData.append("username", this.form.username);
+          formData.append("phone_number", this.form.phone_number);
+          formData.append("address", this.form.address);
+          formData.append("password", this.form.password);
+          formData.append("user_type", this.form.user_type);
+          formData.append("file", this.form.avatarFile);
+          editinfo(formData).then(() => {
+            this.$message({
+              message: "Submit successful!",
+              type: "success",
+            });
+          });
         } else {
           console.log("error submit!!");
           return false;
@@ -132,8 +139,17 @@ export default {
     },
     onReset() {
       this.$refs.form.resetFields();
-      this.form.avatar = "";
-      this.form.avatarFile = null;
+
+      this.form = {
+        id: "",
+        photo: "",
+        avatarFile: null,
+        username: "",
+        phone_number: "",
+        address: "",
+        password: "",
+        user_type: "1",
+      };
     },
   },
 };

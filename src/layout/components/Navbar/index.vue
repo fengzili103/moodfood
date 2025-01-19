@@ -10,7 +10,7 @@
         <el-link type="danger" @click="goto('foodlist')">Food List</el-link>
         <el-link type="danger" @click="goto('cart')"
           >My Cart
-          <div class="amount" id="amount">0</div></el-link
+          <div class="amount" id="amount">{{ amount }}</div></el-link
         >
         <el-link type="danger" @click="goto('current')"
           >Current Orders
@@ -19,7 +19,7 @@
       </div>
       <el-dropdown class="avatar-container" trigger="click">
         <div class="avatar-wrapper">
-          <img :src="avatarSrc" class="user-avatar" />
+          <img :src="imgsrc" class="user-avatar" />
           <i class="el-icon-caret-bottom" />
           <span class="user-name">{{ name }}</span>
         </div>
@@ -35,8 +35,8 @@
     </div>
   </div>
 </template>
+
 <script>
-import { mapGetters } from "vuex";
 import logoTitle from "../LogoTitle/index.vue";
 
 export default {
@@ -46,17 +46,62 @@ export default {
   },
   data() {
     return {
-      avatarSrc: require("@/assets/images/head.png"),
+      imgsrc: "",
+      name: "",
+      amount: 0,
+      currentItems: [],
     };
   },
-  computed: {
-    ...mapGetters({
-      name: "user/name",
-    }),
+  computed: {},
+  mounted() {
+    const user = JSON.parse(sessionStorage.getItem("userinfor"));
+    this.imgsrc = user.photo;
+    this.name = user.username;
+    window.addCart = this.addCart;
+    window.getCart = this.getCart;
+    window.deleteCart = this.deleteCart;
+    window.addCartReal = this.addCartReal;
+    window.clearCart = this.clearCart;
   },
   methods: {
     goto(path) {
-      this.$router.push(`/consumer/${path}`);
+      const targetPath = `/consumer/${path}`;
+      if (this.$route.path !== targetPath) {
+        this.$router.push(targetPath);
+      }
+    },
+    clearCart() {
+      this.amount = 0;
+      this.currentItems = [];
+    },
+    addCart() {
+      this.amount++;
+    },
+    addCartReal(item) {
+      (item.date =
+        new Date().toLocaleDateString("zh-CN", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }) +
+        " " +
+        new Date().toLocaleTimeString("zh-CN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })),
+        this.currentItems.push(item);
+    },
+    getCart() {
+      return this.currentItems;
+    },
+    deleteCart(id) {
+      this.amount--;
+      for (let i = 0; i < this.currentItems.length; i++) {
+        if (this.currentItems[i].id === id) {
+          this.currentItems.splice(i, 1);
+          break;
+        }
+      }
     },
 
     async logout() {
@@ -66,6 +111,7 @@ export default {
   },
 };
 </script>
+
 <style lang="scss" scoped>
 .amount {
   position: absolute;

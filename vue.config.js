@@ -20,15 +20,15 @@ module.exports = defineConfig({
   devServer: {
     port: port,
     proxy: {
-      "/v1": {
-        target: "http://localhost:4891/",
+      "/api": {
+        target: "http://276cm3720ud5.vicp.fun",
 
         logLevel: "debug",
         changeOrigin: true,
 
         secure: false,
         pathRewrite: {
-          "^/v1": "/v1",
+          "^/api": "/",
         },
       },
     },

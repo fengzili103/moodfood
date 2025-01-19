@@ -8,31 +8,64 @@
             <el-input
               style="margin-top: 20px; width: 280px"
               placeholder="Search by food name"
-              v-model="search.name"
+              v-model="searchdata.food_name"
               class="input-with-select"
               size="small"
+              clearable
             >
-              <el-button slot="append" icon="el-icon-search"></el-button>
+              <el-button
+                slot="append"
+                icon="el-icon-search"
+                @click="search"
+              ></el-button>
             </el-input>
           </div>
           <div class="content" ref="content">
             <div class="content-in">
-              <el-table :data="tableData" stripe style="width: 100%">
-                <el-table-column prop="date" label="Date"> </el-table-column>
-                <el-table-column prop="name" label="Name"> </el-table-column>
-                <el-table-column prop="price" label="price(£)">
+              <el-table
+                :data="tableData"
+                stripe
+                style="width: 100%"
+                show-summary
+              >
+                <el-table-column type="index" width="50"> </el-table-column>
+                <el-table-column type="expand">
+                  <template slot-scope="props">
+                    <el-card>
+                      <el-table
+                        :data="props.row.foods"
+                        stripe
+                        style="width: 100%"
+                      >
+                        <el-table-column prop="food_name" label="Food Name">
+                        </el-table-column>
+                        <el-table-column label="Food Picture">
+                          <template slot-scope="scope">
+                            <img
+                              :src="scope.row.photo"
+                              alt="Food Picture"
+                              style="width: 100px; height: 100px"
+                            />
+                          </template>
+                        </el-table-column>
+                        <el-table-column prop="price" label="Price(£)">
+                        </el-table-column>
+                      </el-table>
+                    </el-card>
+                  </template>
                 </el-table-column>
-                <el-table-column prop="status" label="status">
+                <el-table-column prop="order_time" label="Order Date">
+                </el-table-column>
+                <el-table-column prop="order_amount" label="Total price(£)">
+                </el-table-column>
+                <el-table-column prop="remark" label="Order Comment">
+                </el-table-column>
+                <el-table-column label="Status">
+                  <template slot-scope="scope">
+                    {{ findStatus(scope.row.order_state) }}
+                  </template>
                 </el-table-column>
               </el-table>
-            </div>
-            <div class="pagination">
-              <el-pagination
-                background
-                layout="prev, pager, next"
-                :total="1000"
-              >
-              </el-pagination>
             </div>
           </div>
         </div>
@@ -41,38 +74,37 @@
   </div>
 </template>
 <script>
+import { get } from "./service";
+import { getStatus } from "@/utils/tool";
 export default {
   components: {},
   data() {
     return {
-      search: {
-        name: "",
+      searchdata: {
+        food_name: "",
+        customer_id: JSON.parse(sessionStorage.getItem("userinfor")).id,
+        order_state: "0,1,4,5",
       },
-      tableData: [
-        {
-          name: "Spaghetti",
-          date: "2021-09-01 00:00:00",
-          price: "10",
-          status: "processing",
-        },
-        {
-          name: "Spaghetti",
-          date: "2021-09-01 00:00:00",
-          price: "10",
-          status: "processing",
-        },
-        {
-          name: "Spaghetti",
-          date: "2021-09-01 00:00:00",
-          price: "10",
-          status: "processing",
-        },
-      ],
+      tableData: [],
     };
   },
   mounted() {},
+  beforeRouteEnter(to, from, next) {
+    next((vm) => {
+      vm.search();
+    });
+  },
   beforeDestroy() {},
-  methods: {},
+  methods: {
+    findStatus(index) {
+      return getStatus(index);
+    },
+    search() {
+      get(this.searchdata).then((res) => {
+        this.tableData = res.beans;
+      });
+    },
+  },
 };
 </script>
 <style scoped lang="scss">

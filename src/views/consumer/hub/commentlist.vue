@@ -1,8 +1,8 @@
 <template>
   <el-dialog :visible.sync="dialogVisible" :title="dialogTitle">
     <el-table :data="tableData" stripe style="width: 100%">
-      <el-table-column prop="date" label="Date"> </el-table-column>
-      <el-table-column prop="comment" label="Comment"> </el-table-column>
+      <el-table-column prop="create_time" label="Date"> </el-table-column>
+      <el-table-column prop="review" label="Comment"> </el-table-column>
       <el-table-column label="operate">
         <template slot-scope="scope">
           <el-button type="danger" size="small" @click="remove(scope.row)"
@@ -25,18 +25,20 @@ export default {
         food_id: "",
         user_id: "",
       },
+      tableData: [],
     };
   },
   methods: {
     show(row) {
+      console.log(row);
       this.dialogVisible = true;
-      this.form.food_id = row.food_id;
-      this.form.user_id = row.user_id;
+      this.form.food_id = row.id;
+      this.form.user_id = JSON.parse(sessionStorage.getItem("userinfor")).id;
       this.search();
     },
     search() {
       getComment(this.form).then((res) => {
-        this.tableData = res.data;
+        this.tableData = res.beans;
       });
     },
     remove(row) {

@@ -3,7 +3,13 @@
     <el-button type="primary" @click="search" style="margin-bottom: 20px"
       >Reload</el-button
     >
-    <el-table :data="tableData" stripe style="width: 100%" show-summary>
+    <el-table
+      :data="tableData"
+      stripe
+      style="width: 100%"
+      show-summary
+      :height="height"
+    >
       <el-table-column type="index" width="50"> </el-table-column>
       <el-table-column type="expand">
         <template slot-scope="props">
@@ -98,6 +104,7 @@ export default {
   components: {},
   data() {
     return {
+      height: 200,
       searchdata: {
         food_name: "",
         order_state: "1,3,4,5",
@@ -109,10 +116,17 @@ export default {
       dialogVisible: false,
     };
   },
+  created() {
+    this.setDynamicHeight();
+  },
   mounted() {
     this.search();
   },
   methods: {
+    setDynamicHeight() {
+      this.height = window.innerHeight - 200;
+      this.$forceUpdate();
+    },
     findStatus(index) {
       return getStatus(index);
     },

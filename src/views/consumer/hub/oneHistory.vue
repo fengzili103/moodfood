@@ -19,30 +19,59 @@
               ></el-button>
             </el-input>
             <div class="content-in">
-              <el-table :data="tableData" stripe style="width: 100%">
-                <el-table-column prop="date" label="Date"> </el-table-column>
-                <el-table-column prop="name" label="Name"> </el-table-column>
-                <el-table-column prop="price" label="price(£)">
-                </el-table-column>
-                <el-table-column prop="status" label="status">
-                </el-table-column>
-                <el-table-column prop="message" label="message">
-                </el-table-column>
-                <el-table-column label="operate" width="300px">
-                  <template slot-scope="scope">
-                    <el-button
-                      type="text"
-                      size="small"
-                      @click="message(scope.row)"
-                      >leave message</el-button
-                    >
-                    <el-button
-                      type="text"
-                      size="small"
-                      @click="manage(scope.row)"
-                      >manage my message</el-button
-                    >
+              <el-table
+                :data="tableData"
+                stripe
+                style="width: 100%"
+                show-summary
+              >
+                <el-table-column type="index" width="50"> </el-table-column>
+                <el-table-column type="expand">
+                  <template slot-scope="props">
+                    <el-card>
+                      <el-table
+                        :data="props.row.foods"
+                        stripe
+                        style="width: 100%"
+                      >
+                        <el-table-column prop="food_name" label="Food Name">
+                        </el-table-column>
+                        <el-table-column label="Food Picture">
+                          <template slot-scope="scope">
+                            <img
+                              :src="scope.row.photo"
+                              alt="Food Picture"
+                              style="width: 100px; height: 100px"
+                            />
+                          </template>
+                        </el-table-column>
+                        <el-table-column prop="price" label="Price(£)">
+                        </el-table-column>
+                        <el-table-column label="operate" width="300px">
+                          <template slot-scope="scope">
+                            <el-button
+                              type="text"
+                              size="small"
+                              @click="message(scope.row)"
+                              >leave message</el-button
+                            >
+                            <el-button
+                              type="text"
+                              size="small"
+                              @click="manage(scope.row)"
+                              >manage my message</el-button
+                            >
+                          </template>
+                        </el-table-column>
+                      </el-table>
+                    </el-card>
                   </template>
+                </el-table-column>
+                <el-table-column prop="order_time" label="Order Date">
+                </el-table-column>
+                <el-table-column prop="order_amount" label="Total price(£)">
+                </el-table-column>
+                <el-table-column prop="remark" label="Order Comment">
                 </el-table-column>
               </el-table>
             </div>
@@ -110,6 +139,7 @@ export default {
     },
     search() {
       history(this.searchdata).then((res) => {
+        console.log(this.tableData);
         this.tableData = res.beans;
       });
     },

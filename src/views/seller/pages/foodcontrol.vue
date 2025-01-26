@@ -74,7 +74,6 @@ export default {
     setDynamicHeight() {
       this.height = window.innerHeight - 200;
       this.$forceUpdate();
-      console.log(this.height);
     },
     search() {
       let param = {

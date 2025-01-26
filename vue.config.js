@@ -21,7 +21,7 @@ module.exports = defineConfig({
     port: port,
     proxy: {
       "/api": {
-        target: "http://276cm3720ud5.vicp.fun",
+        target: "http://127.0.0.1",
 
         logLevel: "debug",
         changeOrigin: true,
